@@ -25,15 +25,17 @@ public class GameManager : MonoBehaviour
 
 
     // Update is called once per frame
-    void Update()
+    void FixedUpdate()
     {
-        if (CrossPlatformInputManager.GetButton("Fire1") && recording)
+        bool replayPressed = CrossPlatformInputManager.GetButton("Replay");
+
+        if (replayPressed)
         {
             recording = false;
             BroadcastMessage("PlayReplayFrames");
 
         }
-        else
+        else if (!replayPressed)
         {
             recording = true;
             BroadcastMessage("RecordReplayFrames");

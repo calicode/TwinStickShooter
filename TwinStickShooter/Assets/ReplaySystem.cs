@@ -4,42 +4,73 @@ using UnityEngine;
 
 public class ReplaySystem : MonoBehaviour
 {
-    private const int BufferFrames = 100;
-    private MyKeyFrame[] keyFrames = new MyKeyFrame[BufferFrames];
-    private Rigidbody rigidbody;
+    const int BufferFrames = 1000;
+    MyKeyFrame[] keyFrames = new MyKeyFrame[BufferFrames];
+    Rigidbody rb;
 
+    [SerializeField]
+    MyKeyFrame debugPlayBackFrame;
+
+
+    [SerializeField]
+    float frameTime;
+    [SerializeField]
+    int currentRecordingFrame = 0;
+    [SerializeField]
     int currentReplayFrame = 0;
+    int lastReplayFrameWithData;
+
+    enum SystemStates { Replay, Recording };
+    SystemStates currentState = SystemStates.Recording;
 
     // Use this for initialization
     void Start()
     {
-        rigidbody = GetComponent<Rigidbody>();
+        rb = GetComponent<Rigidbody>();
     }
 
     // Update is called once per frame
-    void Update()
-    {
-        //RecordReplayFrames();
-
-
-    }
-
     void PlayReplayFrames()
     {
-        int frame = Time.frameCount % BufferFrames;
-        rigidbody.isKinematic = true;
+        if (currentState != SystemStates.Replay)
+        {
+            Debug.Log("Setting currentreplay to 0");
+            currentState = SystemStates.Replay;
+            currentReplayFrame = 0;
+            rb.isKinematic = true;
+        }
 
 
-        transform.position = keyFrames[frame].myPosition;
-        transform.rotation = keyFrames[frame].myRotation;
+
+        transform.rotation = keyFrames[currentReplayFrame].myRotation;
+        transform.position = keyFrames[currentReplayFrame].myPosition;
+
+        currentReplayFrame++;
+        if (currentReplayFrame >= keyFrames.Length - 1 || keyFrames[currentReplayFrame].myTime == 0f)
+        {
+
+            Debug.Log("resetting replay frame");
+            currentReplayFrame = 0;
+        }
+
+
     }
     void RecordReplayFrames()
     {
-        int frame = Time.frameCount % BufferFrames;
-        rigidbody.isKinematic = false;
 
+        if (currentState != SystemStates.Recording)
+        {
 
-        keyFrames[frame] = new MyKeyFrame(Time.time, transform.position, transform.rotation);
+            currentState = SystemStates.Recording;
+            keyFrames = new MyKeyFrame[BufferFrames]; // reset ring buffer 
+            currentRecordingFrame = 0;
+
+        }
+
+        rb.isKinematic = false;
+        keyFrames[currentRecordingFrame] = new MyKeyFrame(Time.time, transform.position, transform.rotation);
+
+        if (currentRecordingFrame >= keyFrames.Length - 1) { currentRecordingFrame = 0; } else { currentRecordingFrame++; }
     }
 
 }
@@ -47,6 +78,7 @@ public class ReplaySystem : MonoBehaviour
 /// <summary>
 /// A structure for storing time, rotation, and position.
 /// </summary>
+[System.Serializable]
 public struct MyKeyFrame
 {
     public float myTime;
